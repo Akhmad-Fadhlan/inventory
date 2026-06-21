@@ -25,7 +25,30 @@
   box-shadow: var(--shadow-1);
   padding: var(--space-md);
   display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
   align-items: center;
+  justify-content: space-between;
+}
+
+.searchWrapper {
+  position: relative;
+  flex-grow: 1;
+  max-width: 480px;
+  min-width: 280px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-foreground-muted);
+  pointer-events: none;
+}
+
+.searchInput {
+  padding-left: 42px !important;
 }
 
 .filtersWrapper {
@@ -42,7 +65,7 @@
 
 .filterSelect {
   width: auto !important;
-  min-width: 180px;
+  min-width: 160px;
   padding: 8px 12px;
   border-radius: var(--rounded-sm);
   background-color: var(--color-surface);
@@ -67,36 +90,35 @@
   color: var(--color-foreground-muted);
 }
 
-/* Pagination */
-.pagination {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: var(--space-md);
+.overdue {
+  color: var(--color-danger);
+  font-weight: 600;
+  background-color: var(--color-danger-light);
+  padding: 2px 6px;
+  border-radius: var(--rounded-sm);
 }
 
-.pageIndicator {
-  font-family: var(--font-body);
-  font-size: 0.875rem;
+.returnDateText {
+  font-size: 0.775rem;
   color: var(--color-foreground-muted);
 }
 
-.paginationButtons {
-  display: flex;
-  gap: var(--space-sm);
-}
-
-/* Form layout inside Modal */
+/* Form Styles */
 .form {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
 }
 
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+
 .formField {
   display: flex;
   flex-direction: column;
-  width: 100%;
 }
 
 .formActions {
@@ -108,39 +130,53 @@
   padding-top: var(--space-md);
 }
 
-/* Return Modal prompts */
-.returnPrompt {
+.returnInfo {
   background-color: var(--color-background);
   border: 1px solid var(--color-border);
   border-radius: var(--rounded-sm);
   padding: var(--space-md);
-  color: var(--color-foreground);
-  font-size: 0.9rem;
+  text-align: center;
 }
 
-.returnPromptSub {
-  font-size: 0.775rem;
+.returnInfo p {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
   color: var(--color-foreground-muted);
+  margin: 0;
+}
+
+.returnInfo strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  color: var(--color-foreground);
   margin-top: var(--space-xs);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .header {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .filterCard {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
+  .searchWrapper {
+    max-width: 100%;
+  }
+
   .filtersWrapper {
     width: 100%;
   }
-  
+
   .filterSelect {
     flex-grow: 1;
-    width: 100% !important;
+  }
+
+  .formRow {
+    grid-template-columns: 1fr;
   }
 }

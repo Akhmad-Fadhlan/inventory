@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { assetsApi } from '@/lib/api';
 import { 
   STATUS_LABELS, 
@@ -23,14 +23,15 @@ import {
   Edit, 
   Trash2, 
   QrCode, 
-  Upload, 
-  FileText, 
-  Calendar, 
-  MapPin, 
-  User as UserIcon,
-  HelpCircle,
-  Camera,
-  History
+  Camera, 
+  Calendar,
+  Building,
+  User,
+  MapPin,
+  Tag,
+  AlertTriangle,
+  History,
+  FileText
 } from 'lucide-react';
 import styles from './page.module.css';
 
@@ -62,25 +63,23 @@ const PIC_OPTIONS = [
   { id: 'USR003', label: 'Pak Eko' },
 ];
 
-export default function AssetDetailPage({ params }) {
-  const { id } = params;
+export default function AssetDetailPage() {
+  const { id } = useParams();
   const { data: session } = useSession();
   const router = useRouter();
   const { showToast } = useToast();
-  const fileInputRef = useRef(null);
 
   const [asset, setAsset] = useState(null);
+  const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Modals state
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [submittingEdit, setSubmittingEdit] = useState(false);
-  const [submittingDelete, setSubmittingDelete] = useState(false);
-  const [generatingQr, setGeneratingQr] = useState(false);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
-  // Edit form state
+  // Edit Form state
   const [form, setForm] = useState({
     item_name: '',
     category_id: '',
@@ -89,9 +88,9 @@ export default function AssetDetailPage({ params }) {
     pic_id: '',
     brand: '',
     serial_number: '',
+    notes: '',
     condition: '',
-    status: '',
-    notes: ''
+    status: ''
   });
 
   const userRole = session?.user?.role;
@@ -103,6 +102,9 @@ export default function AssetDetailPage({ params }) {
       const res = await assetsApi.get(id);
       if (res.success && res.data) {
         setAsset(res.data);
+        setTransactions(res.data.transactions || []);
+        
+        // Populate edit form
         setForm({
           item_name: res.data.item_name || '',
           category_id: res.data.category_id || '',
@@ -111,9 +113,9 @@ export default function AssetDetailPage({ params }) {
           pic_id: res.data.pic_id || '',
           brand: res.data.brand || '',
           serial_number: res.data.serial_number || '',
+          notes: res.data.notes || '',
           condition: res.data.condition || '',
-          status: res.data.status || '',
-          notes: res.data.notes || ''
+          status: res.data.status || ''
         });
       } else {
         showToast(res.message || 'Gagal memuat detail aset', 'error');
@@ -129,10 +131,10 @@ export default function AssetDetailPage({ params }) {
   }, [id, router, showToast]);
 
   useEffect(() => {
-    if (session) {
+    if (session && id) {
       fetchAssetDetails();
     }
-  }, [session, fetchAssetDetails]);
+  }, [session, id, fetchAssetDetails]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -141,17 +143,12 @@ export default function AssetDetailPage({ params }) {
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
-    if (!form.item_name || !form.category_id || !form.branch_id || !form.room_id || !form.pic_id) {
-      showToast('Mohon lengkapi semua field wajib (*)', 'warning');
-      return;
-    }
-
     try {
-      setSubmittingEdit(true);
+      setActionLoading(true);
       const res = await assetsApi.update(id, form);
       if (res.success) {
-        showToast('Detail aset berhasil diperbarui', 'success');
-        setIsEditOpen(false);
+        showToast('Aset berhasil diperbarui!', 'success');
+        setIsEditModalOpen(false);
         fetchAssetDetails();
       } else {
         showToast(res.message || 'Gagal memperbarui aset', 'error');
@@ -160,17 +157,17 @@ export default function AssetDetailPage({ params }) {
       console.error(err);
       showToast('Koneksi ke server gagal', 'error');
     } finally {
-      setSubmittingEdit(false);
+      setActionLoading(false);
     }
   };
 
   const handleDeleteSubmit = async () => {
     try {
-      setSubmittingDelete(true);
+      setActionLoading(true);
       const res = await assetsApi.delete(id);
       if (res.success) {
-        showToast('Aset berhasil dihapus', 'success');
-        setIsDeleteOpen(false);
+        showToast('Aset berhasil dihapus!', 'success');
+        setIsDeleteModalOpen(false);
         router.push('/assets');
       } else {
         showToast(res.message || 'Gagal menghapus aset', 'error');
@@ -179,115 +176,88 @@ export default function AssetDetailPage({ params }) {
       console.error(err);
       showToast('Koneksi ke server gagal', 'error');
     } finally {
-      setSubmittingDelete(false);
+      setActionLoading(false);
     }
   };
 
   const handleGenerateQr = async () => {
     try {
-      setGeneratingQr(true);
+      setActionLoading(true);
       const res = await assetsApi.generateQr(id);
-      if (res.success) {
-        showToast('QR Code berhasil diperbarui', 'success');
+      if (res.success && res.data) {
+        showToast('QR Code berhasil diregenerasi!', 'success');
         fetchAssetDetails();
+        setIsQrModalOpen(true);
       } else {
-        showToast(res.message || 'Gagal memperbarui QR Code', 'error');
+        showToast(res.message || 'Gagal membuat QR Code', 'error');
       }
     } catch (err) {
       console.error(err);
-      showToast('Gagal memproses pembuatan QR Code', 'error');
+      showToast('Koneksi ke server gagal', 'error');
     } finally {
-      setGeneratingQr(false);
+      setActionLoading(false);
     }
   };
 
-  const handlePhotoUpload = () => {
-    fileInputRef.current.click();
-  };
-
-  const handlePhotoChange = (e) => {
+  const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Check size limit (5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      showToast('Ukuran file foto melebihi limit 5MB', 'warning');
+    // Check size (limit to 1MB to avoid GAS payload limit)
+    if (file.size > 1024 * 1024) {
+      showToast('Ukuran file maksimal adalah 1MB', 'warning');
       return;
     }
 
     const reader = new FileReader();
-    reader.onloadend = async () => {
+    reader.onload = async () => {
       try {
-        setUploadingPhoto(true);
-        // Extract raw base64 string
-        const base64Content = reader.result.split(',')[1];
-        const res = await assetsApi.uploadPhoto(id, base64Content);
+        setActionLoading(true);
+        const base64Photo = reader.result.split(',')[1]; // Get raw base64 string
+        const res = await assetsApi.uploadPhoto(id, base64Photo);
         if (res.success) {
-          showToast('Foto aset berhasil diperbarui', 'success');
+          showToast('Foto aset berhasil diunggah!', 'success');
           fetchAssetDetails();
         } else {
           showToast(res.message || 'Gagal mengunggah foto', 'error');
         }
       } catch (err) {
         console.error(err);
-        showToast('Gagal memproses foto', 'error');
+        showToast('Gagal mengunggah foto', 'error');
       } finally {
-        setUploadingPhoto(false);
+        setActionLoading(false);
       }
     };
     reader.readAsDataURL(file);
   };
 
-  if (loading && !asset) {
-    return (
-      <div className="page-loading">
-        <div className="spinner" />
-      </div>
-    );
-  }
-
-  if (!asset) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.errorState}>Aset tidak ditemukan</div>
-      </div>
-    );
-  }
-
-  // Format details labels
-  const branchLabel = BRANCH_OPTIONS.find(b => b.id === asset.branch_id)?.label || asset.branch_id;
-  const roomLabel = ROOM_OPTIONS.find(r => r.id === asset.room_id)?.label || asset.room_id;
-  const picLabel = PIC_OPTIONS.find(p => p.id === asset.pic_id)?.label || asset.pic_id;
-  const categoryLabel = CATEGORY_OPTIONS.find(c => c.id === asset.category_id)?.label || asset.category_id;
-
-  const trxColumns = [
+  // Transaction history columns
+  const transactionColumns = [
     {
-      key: 'trx_id',
+      key: 'transaction_id',
       label: 'ID Transaksi',
-      width: '15%',
-      render: (item) => item.transaction_id || '-'
+      width: '15%'
     },
     {
-      key: 'trx_type',
-      label: 'Jenis',
-      width: '15%',
+      key: 'type',
+      label: 'Jenis Kegiatan',
+      width: '18%',
       render: (item) => (
-        <Badge variant={STATUS_VARIANT[item.trx_type] || 'default'}>
-          {TRANSACTION_LABELS[item.trx_type] || item.trx_type}
+        <Badge variant={STATUS_VARIANT[item.type] || 'default'}>
+          {TRANSACTION_LABELS[item.type] || item.type}
         </Badge>
       )
     },
     {
-      key: 'description',
-      label: 'Deskripsi Keadaan',
-      width: '40%',
-      render: (item) => <span className={styles.trxNotes}>{item.description || '-'}</span>
+      key: 'operator_name',
+      label: 'Operator',
+      width: '20%'
     },
     {
-      key: 'created_by',
-      label: 'Oleh',
-      width: '15%',
-      render: (item) => item.created_by || '-'
+      key: 'notes',
+      label: 'Catatan / Deskripsi',
+      width: '32%',
+      render: (item) => item.notes || '-'
     },
     {
       key: 'created_at',
@@ -303,210 +273,246 @@ export default function AssetDetailPage({ params }) {
     }
   ];
 
+  if (loading) {
+    return (
+      <div className="page-loading">
+        <div className="spinner" />
+      </div>
+    );
+  }
+
+  if (!asset) return null;
+
+  const branchLabel = BRANCH_OPTIONS.find(b => b.id === asset.branch_id)?.label || asset.branch_id;
+  const roomLabel = ROOM_OPTIONS.find(r => r.id === asset.room_id)?.label || asset.room_id;
+  const picLabel = PIC_OPTIONS.find(p => p.id === asset.pic_id)?.label || asset.pic_id;
+  const categoryLabel = CATEGORY_OPTIONS.find(c => c.id === asset.category_id)?.label || asset.category_id;
+
   return (
     <div className={styles.container}>
-      {/* Back link */}
-      <div className={styles.backWrapper}>
+      {/* Back button and page actions */}
+      <div className={styles.actionHeader}>
         <Button 
           variant="ghost" 
-          size="sm"
           onClick={() => router.push('/assets')}
           icon={<ArrowLeft size={16} />}
         >
-          Kembali ke Daftar Aset
+          Kembali ke Daftar
         </Button>
-      </div>
-
-      {/* Detail Head */}
-      <div className={styles.header}>
-        <div className={styles.titleArea}>
-          <h2 className={styles.title}>{asset.item_name}</h2>
-          <div className={styles.badgesRow}>
-            <Badge variant={STATUS_VARIANT[asset.status] || 'default'}>
-              {STATUS_LABELS[asset.status] || asset.status}
-            </Badge>
-            <Badge variant={STATUS_VARIANT[asset.condition] || 'default'}>
-              {CONDITION_LABELS[asset.condition] || asset.condition}
-            </Badge>
-            <span className={styles.assetIdTag}>{asset.asset_id}</span>
-          </div>
-        </div>
 
         {isWritable && (
-          <div className={styles.actionsArea}>
+          <div className={styles.adminActions}>
             <Button 
-              variant="ghost"
-              onClick={handleGenerateQr}
-              loading={generatingQr}
-              icon={<QrCode size={16} />}
-            >
-              Cetak QR
-            </Button>
-            <Button 
-              variant="ghost"
-              onClick={() => setIsEditOpen(true)}
+              variant="ghost" 
+              onClick={() => setIsEditModalOpen(true)}
               icon={<Edit size={16} />}
             >
-              Ubah
+              Edit Aset
             </Button>
             <Button 
-              variant="danger"
-              onClick={() => setIsDeleteOpen(true)}
+              variant="danger" 
+              onClick={() => setIsDeleteModalOpen(true)}
               icon={<Trash2 size={16} />}
             >
-              Hapus
+              Hapus Aset
             </Button>
           </div>
         )}
       </div>
 
-      {/* Main Grid: Info + Media */}
+      {/* Grid: Media + Info */}
       <div className={styles.mainGrid}>
-        {/* Left Side: General details card */}
-        <div className={styles.detailsCard}>
-          <h3 className={styles.sectionTitle}>
-            <FileText size={18} className={styles.sectionTitleIcon} />
-            Informasi Detail Aset
-          </h3>
-          <div className={styles.detailGrid}>
-            <div className={styles.detailItem}>
-              <span className={styles.detailLabel}>Nama Barang</span>
-              <span className={styles.detailValue}>{asset.item_name}</span>
-            </div>
-            <div className={styles.detailItem}>
-              <span className={styles.detailLabel}>Kategori</span>
-              <span className={styles.detailValue}>{categoryLabel}</span>
-            </div>
-            <div className={styles.detailItem}>
-              <span className={styles.detailLabel}>Merek</span>
-              <span className={styles.detailValue}>{asset.brand || '—'}</span>
-            </div>
-            <div className={styles.detailItem}>
-              <span className={styles.detailLabel}>Nomor Seri</span>
-              <span className={styles.detailValue}>{asset.serial_number || '—'}</span>
-            </div>
-            <div className={styles.detailItem}>
-              <span className={styles.detailLabel}>Cabang</span>
-              <span className={styles.detailValue}>
-                <MapPin size={14} className={styles.inlineIcon} /> {branchLabel}
-              </span>
-            </div>
-            <div className={styles.detailItem}>
-              <span className={styles.detailLabel}>Ruangan</span>
-              <span className={styles.detailValue}>{roomLabel}</span>
-            </div>
-            <div className={styles.detailItem}>
-              <span className={styles.detailLabel}>Penanggung Jawab (PIC)</span>
-              <span className={styles.detailValue}>
-                <UserIcon size={14} className={styles.inlineIcon} /> {picLabel}
-              </span>
-            </div>
-            <div className={styles.detailItem}>
-              <span className={styles.detailLabel}>Tanggal Registrasi</span>
-              <span className={styles.detailValue}>
-                <Calendar size={14} className={styles.inlineIcon} />{' '}
-                {new Date(asset.created_at).toLocaleDateString('id-ID', {
-                  day: '2-digit',
-                  month: 'long',
-                  year: 'numeric'
-                })}
-              </span>
-            </div>
+        {/* Left Column: Photos and QR */}
+        <div className={styles.mediaCard}>
+          <div className={styles.imageSection}>
+            {asset.photo_url ? (
+              <img 
+                src={asset.photo_url} 
+                alt={asset.item_name} 
+                className={styles.assetImage}
+              />
+            ) : (
+              <div className={styles.placeholderImage}>
+                <Camera size={48} className={styles.cameraIcon} />
+                <span>Belum ada foto aset</span>
+              </div>
+            )}
+            
+            {isWritable && (
+              <label className={styles.uploadBtn}>
+                <Camera size={14} style={{ marginRight: '6px' }} />
+                {asset.photo_url ? 'Ubah Foto' : 'Unggah Foto'}
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handlePhotoUpload} 
+                  disabled={actionLoading}
+                  style={{ display: 'none' }}
+                />
+              </label>
+            )}
           </div>
-          {asset.notes && (
-            <div className={styles.notesBox}>
-              <span className={styles.detailLabel}>Catatan Tambahan</span>
-              <p className={styles.notesContent}>{asset.notes}</p>
-            </div>
-          )}
-        </div>
 
-        {/* Right Side: Media (Photo & QR Code) */}
-        <div className={styles.mediaSide}>
-          {/* Photo Card */}
-          <div className={styles.mediaCard}>
-            <div className={styles.photoHeader}>
-              <h4>Foto Aset</h4>
-              {isWritable && (
-                <>
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    onChange={handlePhotoChange}
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                  />
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={handlePhotoUpload}
-                    loading={uploadingPhoto}
-                    icon={<Camera size={14} />}
-                  >
-                    Unggah
-                  </Button>
-                </>
-              )}
-            </div>
-            <div className={styles.photoContainer}>
-              {asset.photo_url ? (
+          <div className={styles.qrSection}>
+            <div className={styles.qrWrapper}>
+              {asset.qr_code ? (
                 <img 
-                  src={asset.photo_url} 
-                  alt={asset.item_name} 
-                  className={styles.assetImg}
+                  src={asset.qr_code} 
+                  alt="QR Code" 
+                  className={styles.qrImage}
+                  onClick={() => setIsQrModalOpen(true)}
+                  title="Klik untuk memperbesar"
                 />
               ) : (
-                <div className={styles.photoPlaceholder}>
-                  <Camera size={48} className={styles.photoPlaceholderIcon} />
-                  <span>Belum ada foto aset</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* QR Code Card */}
-          <div className={styles.mediaCard}>
-            <h4>Barcode / QR Code</h4>
-            <div className={styles.qrContainer}>
-              {asset.qr_code ? (
-                <div className={styles.qrImageWrapper}>
-                  <img 
-                    src={asset.qr_code} 
-                    alt={`QR Code ${asset.asset_id}`}
-                    className={styles.qrImg}
-                  />
-                  <span className={styles.qrId}>{asset.asset_id}</span>
-                </div>
-              ) : (
-                <div className={styles.qrPlaceholder}>
-                  <QrCode size={48} className={styles.qrPlaceholderIcon} />
+                <div className={styles.placeholderQr}>
+                  <QrCode size={40} />
                   <span>QR Code belum dibuat</span>
                 </div>
               )}
             </div>
+            {isWritable && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleGenerateQr}
+                loading={actionLoading}
+                icon={<QrCode size={14} />}
+              >
+                Regenerasi QR
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Right Column: Asset Specifications */}
+        <div className={styles.infoCard}>
+          <div className={styles.infoTitleSection}>
+            <div className={styles.badgeRow}>
+              <Badge variant={STATUS_VARIANT[asset.status] || 'default'}>
+                {STATUS_LABELS[asset.status] || asset.status}
+              </Badge>
+              <Badge variant={STATUS_VARIANT[asset.condition] || 'default'}>
+                {CONDITION_LABELS[asset.condition] || asset.condition}
+              </Badge>
+            </div>
+            <h2 className={styles.assetName}>{asset.item_name}</h2>
+            <span className={styles.assetCode}>ID Aset: {asset.asset_id}</span>
+          </div>
+
+          <div className={styles.detailsGrid}>
+            <div className={styles.detailItem}>
+              <Tag size={18} className={styles.detailIcon} />
+              <div className={styles.detailText}>
+                <span className={styles.detailLabel}>Kategori</span>
+                <span className={styles.detailValue}>{categoryLabel}</span>
+              </div>
+            </div>
+
+            <div className={styles.detailItem}>
+              <Building size={18} className={styles.detailIcon} />
+              <div className={styles.detailText}>
+                <span className={styles.detailLabel}>Cabang / Lokasi</span>
+                <span className={styles.detailValue}>{branchLabel}</span>
+              </div>
+            </div>
+
+            <div className={styles.detailItem}>
+              <MapPin size={18} className={styles.detailIcon} />
+              <div className={styles.detailText}>
+                <span className={styles.detailLabel}>Ruangan</span>
+                <span className={styles.detailValue}>{roomLabel}</span>
+              </div>
+            </div>
+
+            <div className={styles.detailItem}>
+              <User size={18} className={styles.detailIcon} />
+              <div className={styles.detailText}>
+                <span className={styles.detailLabel}>Penanggung Jawab (PIC)</span>
+                <span className={styles.detailValue}>{picLabel}</span>
+              </div>
+            </div>
+
+            <div className={styles.detailItem}>
+              <FileText size={18} className={styles.detailIcon} />
+              <div className={styles.detailText}>
+                <span className={styles.detailLabel}>Merek / Brand</span>
+                <span className={styles.detailValue}>{asset.brand || '—'}</span>
+              </div>
+            </div>
+
+            <div className={styles.detailItem}>
+              <FileText size={18} className={styles.detailIcon} />
+              <div className={styles.detailText}>
+                <span className={styles.detailLabel}>Nomor Seri</span>
+                <span className={styles.detailValue}>{asset.serial_number || '—'}</span>
+              </div>
+            </div>
+
+            <div className={styles.detailItem}>
+              <Calendar size={18} className={styles.detailIcon} />
+              <div className={styles.detailText}>
+                <span className={styles.detailLabel}>Tanggal Registrasi</span>
+                <span className={styles.detailValue}>
+                  {new Date(asset.created_at).toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                  })}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.notesSection}>
+            <span className={styles.notesLabel}>Catatan Tambahan</span>
+            <p className={styles.notesValue}>
+              {asset.notes || 'Tidak ada catatan tambahan untuk aset ini.'}
+            </p>
           </div>
         </div>
       </div>
 
       {/* Transaction History Section */}
-      <div className={styles.transactionsSection}>
-        <div className={styles.sectionHeader}>
-          <History size={20} className={styles.sectionHeaderIcon} />
-          <h3>Riwayat Log Transaksi Aset</h3>
+      <div className={styles.historySection}>
+        <div className={styles.historyHeader}>
+          <History size={20} className={styles.historyIcon} />
+          <h3>Riwayat Aktivitas Aset</h3>
         </div>
-        <DataTable
-          columns={trxColumns}
-          data={asset.transactions || []}
-          loading={loading}
-          emptyMessage="Aset ini belum memiliki log aktivitas peminjaman, perbaikan, atau transfer."
+        <DataTable 
+          columns={transactionColumns}
+          data={transactions}
+          loading={false}
+          emptyMessage="Belum ada riwayat aktivitas untuk aset ini"
         />
       </div>
 
-      {/* Edit Modal */}
+      {/* QR Code Zoom Modal */}
       <Modal
-        isOpen={isEditOpen}
-        onClose={() => setIsEditOpen(false)}
-        title="Ubah Detail Aset"
+        isOpen={isQrModalOpen}
+        onClose={() => setIsQrModalOpen(false)}
+        title="QR Code Inventaris"
+        size="sm"
+      >
+        <div className={styles.qrZoomContainer}>
+          <img src={asset.qr_code} alt="QR Code Large" className={styles.qrZoomImage} />
+          <strong className={styles.qrZoomText}>{asset.asset_id}</strong>
+          <span className={styles.qrZoomSub}>{asset.item_name}</span>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => window.print()}
+            style={{ marginTop: '16px' }}
+          >
+            Cetak Label QR
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Edit Asset Modal */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title="Edit Detail Aset"
         size="md"
       >
         <form onSubmit={handleEditSubmit} className={styles.form}>
@@ -532,7 +538,6 @@ export default function AssetDetailPage({ params }) {
                 onChange={handleInputChange}
                 required
               >
-                <option value="">Pilih Kategori</option>
                 {CATEGORY_OPTIONS.map(opt => (
                   <option key={opt.id} value={opt.id}>{opt.label}</option>
                 ))}
@@ -551,7 +556,6 @@ export default function AssetDetailPage({ params }) {
                 disabled={userRole === ROLES.BRANCH_ADMIN}
                 required
               >
-                <option value="">Pilih Cabang</option>
                 {BRANCH_OPTIONS.map(opt => (
                   <option key={opt.id} value={opt.id}>{opt.label}</option>
                 ))}
@@ -567,7 +571,6 @@ export default function AssetDetailPage({ params }) {
                 onChange={handleInputChange}
                 required
               >
-                <option value="">Pilih Ruangan</option>
                 {ROOM_OPTIONS.map(opt => (
                   <option key={opt.id} value={opt.id}>{opt.label}</option>
                 ))}
@@ -585,7 +588,6 @@ export default function AssetDetailPage({ params }) {
                 onChange={handleInputChange}
                 required
               >
-                <option value="">Pilih PIC</option>
                 {PIC_OPTIONS.map(opt => (
                   <option key={opt.id} value={opt.id}>{opt.label}</option>
                 ))}
@@ -606,48 +608,50 @@ export default function AssetDetailPage({ params }) {
 
           <div className={styles.formRow}>
             <div className={styles.formField}>
-              <label htmlFor="serial_number">Nomor Seri</label>
-              <input 
-                id="serial_number"
-                type="text" 
-                name="serial_number" 
-                value={form.serial_number}
-                onChange={handleInputChange}
-              />
-            </div>
-
-            <div className={styles.formField}>
-              <label htmlFor="condition">Kondisi Aset</label>
+              <label htmlFor="condition">Kondisi Aset*</label>
               <select 
                 id="condition"
                 name="condition" 
                 value={form.condition}
                 onChange={handleInputChange}
+                required
               >
                 <option value={ASSET_CONDITION.GOOD}>Baik</option>
                 <option value={ASSET_CONDITION.MINOR_DAMAGE}>Kerusakan Ringan</option>
                 <option value={ASSET_CONDITION.MAJOR_DAMAGE}>Kerusakan Berat</option>
               </select>
             </div>
+
+            <div className={styles.formField}>
+              <label htmlFor="status">Status Aset*</label>
+              <select 
+                id="status"
+                name="status" 
+                value={form.status}
+                onChange={handleInputChange}
+                required
+              >
+                <option value={ASSET_STATUS.AVAILABLE}>Tersedia</option>
+                <option value={ASSET_STATUS.BORROWED}>Dipinjam</option>
+                <option value={ASSET_STATUS.MAINTENANCE}>Perbaikan</option>
+                <option value={ASSET_STATUS.DAMAGED}>Rusak</option>
+              </select>
+            </div>
           </div>
 
           <div className={styles.formField}>
-            <label htmlFor="status">Status Aset</label>
-            <select 
-              id="status"
-              name="status" 
-              value={form.status}
+            <label htmlFor="serial_number">Nomor Seri</label>
+            <input 
+              id="serial_number"
+              type="text" 
+              name="serial_number" 
+              value={form.serial_number}
               onChange={handleInputChange}
-            >
-              <option value={ASSET_STATUS.AVAILABLE}>Tersedia</option>
-              <option value={ASSET_STATUS.BORROWED}>Dipinjam</option>
-              <option value={ASSET_STATUS.MAINTENANCE}>Perbaikan</option>
-              <option value={ASSET_STATUS.DAMAGED}>Rusak</option>
-            </select>
+            />
           </div>
 
           <div className={styles.formField}>
-            <label htmlFor="notes">Catatan</label>
+            <label htmlFor="notes">Catatan Tambahan</label>
             <textarea 
               id="notes"
               name="notes" 
@@ -660,15 +664,15 @@ export default function AssetDetailPage({ params }) {
           <div className={styles.formActions}>
             <Button 
               variant="ghost" 
-              onClick={() => setIsEditOpen(false)}
-              disabled={submittingEdit}
+              onClick={() => setIsEditModalOpen(false)}
+              disabled={actionLoading}
             >
               Batal
             </Button>
             <Button 
               type="submit"
               variant="primary"
-              loading={submittingEdit}
+              loading={actionLoading}
             >
               Simpan Perubahan
             </Button>
@@ -678,28 +682,29 @@ export default function AssetDetailPage({ params }) {
 
       {/* Delete Confirmation Modal */}
       <Modal
-        isOpen={isDeleteOpen}
-        onClose={() => setIsDeleteOpen(false)}
-        title="Konfirmasi Hapus Aset"
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Hapus Aset"
         size="sm"
       >
-        <div className={styles.deleteConfirmBody}>
-          <HelpCircle size={40} className={styles.deleteConfirmIcon} />
-          <p className={styles.deleteText}>Apakah Anda yakin ingin menghapus aset <strong>{asset.item_name}</strong> ({asset.asset_id})?</p>
-          <p className={styles.deleteWarn}>Tindakan ini akan mengubah status aset menjadi terhapus dan mengeluarkannya dari inventaris aktif.</p>
-          
+        <div className={styles.deleteConfirmWrapper}>
+          <AlertTriangle size={48} className={styles.warningIcon} />
+          <h4>Apakah Anda yakin ingin menghapus aset ini?</h4>
+          <p>
+            Tindakan ini tidak dapat dibatalkan. Aset <strong>{asset.item_name}</strong> ({asset.asset_id}) akan dihapus secara soft-delete dari sistem.
+          </p>
           <div className={styles.deleteActions}>
             <Button 
               variant="ghost" 
-              onClick={() => setIsDeleteOpen(false)}
-              disabled={submittingDelete}
+              onClick={() => setIsDeleteModalOpen(false)}
+              disabled={actionLoading}
             >
               Batal
             </Button>
             <Button 
-              variant="danger"
+              variant="danger" 
               onClick={handleDeleteSubmit}
-              loading={submittingDelete}
+              loading={actionLoading}
             >
               Ya, Hapus Aset
             </Button>

@@ -33,3 +33,15 @@
     width: 100%;
   }
 }
+
+@media print {
+  .mainArea,
+  .mainAreaCollapsed {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+  .content {
+    padding-top: 0 !important;
+  }
+}
+

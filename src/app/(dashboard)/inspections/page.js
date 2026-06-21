@@ -15,11 +15,11 @@ import Button from '@/components/Button';
 import Modal from '@/components/Modal';
 import { useToast } from '@/components/Providers';
 import { 
-  Plus, 
   ClipboardCheck, 
-  SlidersHorizontal,
+  Plus, 
+  Search,
   Calendar,
-  AlertCircle
+  MessageSquare
 } from 'lucide-react';
 import styles from './page.module.css';
 
@@ -29,33 +29,33 @@ export default function InspectionsPage() {
 
   const [inspections, setInspections] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const limit = 10;
+  const [searchVal, setSearchVal] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Modal state
-  const [isOpen, setIsOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-
-  // Form state
+  
   const [form, setForm] = useState({
     asset_id: '',
     result: ASSET_CONDITION.GOOD,
     notes: ''
   });
 
+  const userRole = session?.user?.role;
+  const isWritable = userRole === ROLES.SUPER_ADMIN || userRole === ROLES.BRANCH_ADMIN;
+
   const fetchInspections = useCallback(async () => {
     try {
       setLoading(true);
       const params = {
-        limit,
-        offset: (page - 1) * limit
+        search: searchTerm || undefined
       };
-
       const res = await inspectionsApi.list(params);
       if (res.success) {
         setInspections(res.data || []);
       } else {
-        showToast(res.message || 'Gagal memuat riwayat inspeksi', 'error');
+        showToast(res.message || 'Gagal memuat data inspeksi', 'error');
       }
     } catch (err) {
       console.error(err);
@@ -63,7 +63,7 @@ export default function InspectionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, showToast]);
+  }, [searchTerm, showToast]);
 
   useEffect(() => {
     if (session) {
@@ -71,14 +71,13 @@ export default function InspectionsPage() {
     }
   }, [session, fetchInspections]);
 
-  const handleOpenModal = () => {
-    setForm({
-      asset_id: '',
-      result: ASSET_CONDITION.GOOD,
-      notes: ''
-    });
-    setIsOpen(true);
-  };
+  // Debounce search
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchTerm(searchVal);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchVal]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -88,7 +87,7 @@ export default function InspectionsPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.asset_id || !form.result) {
-      showToast('Mohon isi field wajib (*)', 'warning');
+      showToast('Mohon lengkapi field wajib (*)', 'warning');
       return;
     }
 
@@ -96,11 +95,11 @@ export default function InspectionsPage() {
       setSubmitting(true);
       const res = await inspectionsApi.create(form);
       if (res.success) {
-        showToast('Inspeksi fisik berhasil dicatat!', 'success');
-        setIsOpen(false);
+        showToast('Inspeksi aset berhasil dicatat!', 'success');
+        setIsCreateModalOpen(false);
         fetchInspections();
       } else {
-        showToast(res.message || 'Gagal menyimpan inspeksi', 'error');
+        showToast(res.message || 'Gagal mencatat inspeksi', 'error');
       }
     } catch (err) {
       console.error(err);
@@ -108,6 +107,15 @@ export default function InspectionsPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleOpenCreateModal = () => {
+    setForm({
+      asset_id: '',
+      result: ASSET_CONDITION.GOOD,
+      notes: ''
+    });
+    setIsCreateModalOpen(true);
   };
 
   const columns = [
@@ -122,20 +130,8 @@ export default function InspectionsPage() {
       width: '20%'
     },
     {
-      key: 'inspection_date',
-      label: 'Tanggal Inspeksi',
-      width: '20%',
-      render: (item) => new Date(item.inspection_date).toLocaleDateString('id-ID', {
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    },
-    {
       key: 'result',
-      label: 'Kondisi Hasil',
+      label: 'Hasil Pemeriksaan',
       width: '20%',
       render: (item) => (
         <Badge variant={STATUS_VARIANT[item.result] || 'default'}>
@@ -145,26 +141,54 @@ export default function InspectionsPage() {
     },
     {
       key: 'notes',
-      label: 'Catatan Keadaan',
-      width: '25%',
-      render: (item) => <span className={styles.notesText}>{item.notes || '—'}</span>
+      label: 'Catatan Temuan',
+      width: '30%',
+      render: (item) => item.notes || 'Tidak ada catatan'
+    },
+    {
+      key: 'inspection_date',
+      label: 'Tanggal Inspeksi',
+      width: '15%',
+      render: (item) => new Date(item.inspection_date).toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
     }
   ];
 
   return (
     <div className={styles.container}>
-      {/* Header section */}
+      {/* Page Header */}
       <div className={styles.header}>
-        <div>
-          <p className={styles.subtext}>Catatan riwayat pemeriksaan fisik berkala dan audit kondisi aset sekolah.</p>
+        <div className={styles.headerText}>
+          <p className={styles.subtext}>Sejarah audit kualitas fisik dan kepatuhan kelayakan aset sekolah.</p>
         </div>
-        <Button 
-          variant="primary" 
-          onClick={handleOpenModal}
-          icon={<Plus size={18} />}
-        >
-          Buat Inspeksi
-        </Button>
+        {isWritable && (
+          <Button 
+            variant="primary" 
+            onClick={handleOpenCreateModal}
+            icon={<Plus size={18} />}
+          >
+            Mulai Inspeksi
+          </Button>
+        )}
+      </div>
+
+      {/* Filter Card */}
+      <div className={styles.filterCard}>
+        <div className={styles.searchWrapper}>
+          <Search size={18} className={styles.searchIcon} />
+          <input 
+            type="text" 
+            placeholder="Cari berdasarkan ID Aset, ID Inspeksi, atau catatan..." 
+            value={searchVal}
+            onChange={(e) => setSearchVal(e.target.value)}
+            className={styles.searchInput}
+          />
+        </div>
       </div>
 
       {/* Table */}
@@ -173,50 +197,23 @@ export default function InspectionsPage() {
           columns={columns}
           data={inspections}
           loading={loading}
-          emptyMessage="Belum ada riwayat inspeksi aset"
+          emptyMessage="Tidak ada riwayat inspeksi aset ditemukan"
           emptyIcon={ClipboardCheck}
         />
       </div>
 
-      {/* Pagination */}
-      {!loading && inspections.length > 0 && (
-        <div className={styles.pagination}>
-          <span className={styles.pageIndicator}>
-            Halaman <strong>{page}</strong>
-          </span>
-          <div className={styles.paginationButtons}>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              disabled={page === 1}
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-            >
-              Sebelumnya
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              disabled={inspections.length < limit}
-              onClick={() => setPage(p => p + 1)}
-            >
-              Selanjutnya
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Inspection Modal */}
+      {/* Create Inspection Modal */}
       <Modal
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-        title="Catat Inspeksi Fisik Aset"
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        title="Formulir Inspeksi Aset"
         size="sm"
       >
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.formField}>
-            <label htmlFor="inspect_asset_id">ID Aset*</label>
+            <label htmlFor="asset_id">ID Aset / Kode Barang*</label>
             <input 
-              id="inspect_asset_id"
+              id="asset_id"
               type="text" 
               name="asset_id" 
               value={form.asset_id}
@@ -227,43 +224,36 @@ export default function InspectionsPage() {
           </div>
 
           <div className={styles.formField}>
-            <label htmlFor="inspect_result">Kondisi Hasil Pemeriksaan*</label>
+            <label htmlFor="result">Kondisi Hasil Pemeriksaan*</label>
             <select 
-              id="inspect_result"
+              id="result"
               name="result" 
               value={form.result}
               onChange={handleInputChange}
               required
             >
-              <option value={ASSET_CONDITION.GOOD}>Baik (Siap Digunakan)</option>
-              <option value={ASSET_CONDITION.MINOR_DAMAGE}>Kerusakan Ringan (Akan Masuk Perbaikan)</option>
-              <option value={ASSET_CONDITION.MAJOR_DAMAGE}>Kerusakan Berat (Rusak Total)</option>
+              <option value={ASSET_CONDITION.GOOD}>Baik (Layak Pakai)</option>
+              <option value={ASSET_CONDITION.MINOR_DAMAGE}>Rusak Ringan (Butuh Servis/Perbaikan)</option>
+              <option value={ASSET_CONDITION.MAJOR_DAMAGE}>Rusak Berat (Tidak Layak Pakai)</option>
             </select>
           </div>
 
           <div className={styles.formField}>
-            <label htmlFor="inspect_notes">Catatan Pemeriksaan</label>
+            <label htmlFor="notes">Catatan Pemeriksaan</label>
             <textarea 
-              id="inspect_notes"
+              id="notes"
               name="notes" 
               value={form.notes}
               onChange={handleInputChange}
-              placeholder="Tuliskan keterangan detail kondisi fisik barang..."
-              rows={3}
+              placeholder="Sebutkan temuan masalah secara spesifik (misal: layar berkedip, baterai drop, dll)..."
+              rows={4}
             />
-          </div>
-
-          <div className={styles.warningAlert}>
-            <AlertCircle size={16} className={styles.alertIcon} />
-            <p className={styles.alertText}>
-              Memilih <strong>Kerusakan Ringan</strong> akan secara otomatis memindahkan status aset ke perbaikan dan membuat tiket perbaikan pending.
-            </p>
           </div>
 
           <div className={styles.formActions}>
             <Button 
               variant="ghost" 
-              onClick={() => setIsOpen(false)}
+              onClick={() => setIsCreateModalOpen(false)}
               disabled={submitting}
             >
               Batal
@@ -273,7 +263,7 @@ export default function InspectionsPage() {
               variant="primary"
               loading={submitting}
             >
-              Simpan Hasil
+              Simpan Hasil Audit
             </Button>
           </div>
         </form>

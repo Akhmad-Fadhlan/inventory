@@ -5,17 +5,17 @@ import { useSession } from 'next-auth/react';
 import { transfersApi } from '@/lib/api';
 import { ROLES } from '@/lib/constants';
 import DataTable from '@/components/DataTable';
-import Badge from '@/components/Badge';
 import Button from '@/components/Button';
 import Modal from '@/components/Modal';
 import { useToast } from '@/components/Providers';
 import { 
-  Plus, 
   Truck, 
-  Calendar,
-  User,
+  Plus, 
+  Search,
   ArrowRight,
-  MapPin
+  Calendar,
+  Building,
+  User
 } from 'lucide-react';
 import styles from './page.module.css';
 
@@ -44,11 +44,11 @@ export default function TransfersPage() {
 
   const [transfers, setTransfers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const limit = 10;
+  const [searchVal, setSearchVal] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Modal state
-  const [isOpen, setIsOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   // Form state
@@ -59,14 +59,15 @@ export default function TransfersPage() {
     new_pic: ''
   });
 
+  const userRole = session?.user?.role;
+  const isWritable = userRole === ROLES.SUPER_ADMIN || userRole === ROLES.BRANCH_ADMIN;
+
   const fetchTransfers = useCallback(async () => {
     try {
       setLoading(true);
       const params = {
-        limit,
-        offset: (page - 1) * limit
+        search: searchTerm || undefined
       };
-
       const res = await transfersApi.list(params);
       if (res.success) {
         setTransfers(res.data || []);
@@ -79,7 +80,7 @@ export default function TransfersPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, showToast]);
+  }, [searchTerm, showToast]);
 
   useEffect(() => {
     if (session) {
@@ -87,15 +88,13 @@ export default function TransfersPage() {
     }
   }, [session, fetchTransfers]);
 
-  const handleOpenModal = () => {
-    setForm({
-      asset_id: '',
-      to_branch: '',
-      to_room: '',
-      new_pic: ''
-    });
-    setIsOpen(true);
-  };
+  // Debounce search
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchTerm(searchVal);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchVal]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -105,7 +104,7 @@ export default function TransfersPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.asset_id || !form.to_branch || !form.to_room || !form.new_pic) {
-      showToast('Mohon isi semua field wajib (*)', 'warning');
+      showToast('Mohon lengkapi field wajib (*)', 'warning');
       return;
     }
 
@@ -113,11 +112,11 @@ export default function TransfersPage() {
       setSubmitting(true);
       const res = await transfersApi.create(form);
       if (res.success) {
-        showToast('Aset berhasil ditransfer!', 'success');
-        setIsOpen(false);
+        showToast('Transfer aset berhasil diproses!', 'success');
+        setIsCreateModalOpen(false);
         fetchTransfers();
       } else {
-        showToast(res.message || 'Gagal melakukan transfer aset', 'error');
+        showToast(res.message || 'Gagal memproses transfer aset', 'error');
       }
     } catch (err) {
       console.error(err);
@@ -125,6 +124,16 @@ export default function TransfersPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleOpenCreateModal = () => {
+    setForm({
+      asset_id: '',
+      to_branch: '',
+      to_room: '',
+      new_pic: ''
+    });
+    setIsCreateModalOpen(true);
   };
 
   const getBranchLabel = (id) => BRANCH_OPTIONS.find(b => b.id === id)?.label || id;
@@ -143,64 +152,79 @@ export default function TransfersPage() {
       width: '15%'
     },
     {
-      key: 'branch_transfer',
-      label: 'Transfer Cabang',
-      width: '25%',
+      key: 'branch',
+      label: 'Mutasi Cabang',
+      width: '23%',
       render: (item) => (
         <div className={styles.routeCell}>
-          <span className={styles.routeSource}>{getBranchLabel(item.from_branch)}</span>
+          <span className={styles.originLoc}>{getBranchLabel(item.from_branch)}</span>
           <ArrowRight size={14} className={styles.routeArrow} />
-          <span className={styles.routeDest}>{getBranchLabel(item.to_branch)}</span>
+          <span className={styles.targetLoc}>{getBranchLabel(item.to_branch)}</span>
         </div>
       )
     },
     {
-      key: 'room_transfer',
-      label: 'Transfer Ruang',
-      width: '20%',
+      key: 'room',
+      label: 'Mutasi Ruang',
+      width: '23%',
       render: (item) => (
         <div className={styles.routeCell}>
-          <span className={styles.routeSource}>{getRoomLabel(item.from_room)}</span>
+          <span className={styles.originLoc}>{getRoomLabel(item.from_room)}</span>
           <ArrowRight size={14} className={styles.routeArrow} />
-          <span className={styles.routeDest}>{getRoomLabel(item.to_room)}</span>
+          <span className={styles.targetLoc}>{getRoomLabel(item.to_room)}</span>
         </div>
       )
     },
     {
       key: 'new_pic',
       label: 'PIC Baru',
-      width: '15%',
+      width: '12%',
       render: (item) => getPicLabel(item.new_pic)
     },
     {
       key: 'transfer_date',
-      label: 'Tanggal',
-      width: '13%',
+      label: 'Tanggal Mutasi',
+      width: '15%',
       render: (item) => new Date(item.transfer_date).toLocaleDateString('id-ID', {
         day: '2-digit',
         month: 'short',
-        year: 'numeric'
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
       })
     }
   ];
 
-  const userRole = session?.user?.role;
-  const isBranchAdmin = userRole === ROLES.BRANCH_ADMIN;
-
   return (
     <div className={styles.container}>
-      {/* Header section */}
+      {/* Page Header */}
       <div className={styles.header}>
-        <div>
-          <p className={styles.subtext}>Kelola dan catat pemindahan aset antar lokasi cabang atau ruang sekolah.</p>
+        <div className={styles.headerText}>
+          <p className={styles.subtext}>Mutasi pemindahan lokasi barang inventaris antar cabang, ruangan, maupun penanggung jawab.</p>
         </div>
-        <Button 
-          variant="primary" 
-          onClick={handleOpenModal}
-          icon={<Plus size={18} />}
-        >
-          Transfer Aset
-        </Button>
+        {isWritable && (
+          <Button 
+            variant="primary" 
+            onClick={handleOpenCreateModal}
+            icon={<Plus size={18} />}
+          >
+            Transfer Aset
+          </Button>
+        )}
+      </div>
+
+      {/* Filter Card */}
+      <div className={styles.filterCard}>
+        <div className={styles.searchWrapper}>
+          <Search size={18} className={styles.searchIcon} />
+          <input 
+            type="text" 
+            placeholder="Cari berdasarkan ID Aset, ID Transfer, cabang, atau PIC..." 
+            value={searchVal}
+            onChange={(e) => setSearchVal(e.target.value)}
+            className={styles.searchInput}
+          />
+        </div>
       </div>
 
       {/* Table */}
@@ -209,50 +233,23 @@ export default function TransfersPage() {
           columns={columns}
           data={transfers}
           loading={loading}
-          emptyMessage="Tidak ada riwayat transfer aset"
+          emptyMessage="Tidak ada riwayat transfer aset ditemukan"
           emptyIcon={Truck}
         />
       </div>
 
-      {/* Pagination */}
-      {!loading && transfers.length > 0 && (
-        <div className={styles.pagination}>
-          <span className={styles.pageIndicator}>
-            Halaman <strong>{page}</strong>
-          </span>
-          <div className={styles.paginationButtons}>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              disabled={page === 1}
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-            >
-              Sebelumnya
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              disabled={transfers.length < limit}
-              onClick={() => setPage(p => p + 1)}
-            >
-              Selanjutnya
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Transfer Modal */}
+      {/* Create Transfer Modal */}
       <Modal
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-        title="Transfer Aset ke Lokasi Baru"
-        size="sm"
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        title="Formulir Mutasi / Transfer Aset"
+        size="md"
       >
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.formField}>
-            <label htmlFor="transfer_asset_id">ID Aset*</label>
+            <label htmlFor="asset_id">ID Aset / Kode Barang*</label>
             <input 
-              id="transfer_asset_id"
+              id="asset_id"
               type="text" 
               name="asset_id" 
               value={form.asset_id}
@@ -262,54 +259,50 @@ export default function TransfersPage() {
             />
           </div>
 
-          <div className={styles.formField}>
-            <label htmlFor="transfer_to_branch">Cabang Tujuan*</label>
-            <select 
-              id="transfer_to_branch"
-              name="to_branch" 
-              value={form.to_branch}
-              onChange={handleInputChange}
-              required
-            >
-              <option value="">Pilih Cabang</option>
-              {BRANCH_OPTIONS.map(opt => (
-                <option 
-                  key={opt.id} 
-                  value={opt.id}
-                  disabled={isBranchAdmin && opt.id !== session.user.branch_id}
-                >
-                  {opt.label} {isBranchAdmin && opt.id !== session.user.branch_id ? '(Terbatas Admin)' : ''}
-                </option>
-              ))}
-            </select>
+          <div className={styles.formRow}>
+            <div className={styles.formField}>
+              <label htmlFor="to_branch">Cabang Tujuan*</label>
+              <select 
+                id="to_branch"
+                name="to_branch" 
+                value={form.to_branch}
+                onChange={handleInputChange}
+                required
+              >
+                <option value="">Pilih Cabang</option>
+                {BRANCH_OPTIONS.map(opt => (
+                  <option key={opt.id} value={opt.id}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className={styles.formField}>
+              <label htmlFor="to_room">Ruangan Tujuan*</label>
+              <select 
+                id="to_room"
+                name="to_room" 
+                value={form.to_room}
+                onChange={handleInputChange}
+                required
+              >
+                <option value="">Pilih Ruangan</option>
+                {ROOM_OPTIONS.map(opt => (
+                  <option key={opt.id} value={opt.id}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className={styles.formField}>
-            <label htmlFor="transfer_to_room">Ruangan Tujuan*</label>
+            <label htmlFor="new_pic">Penanggung Jawab (PIC) Baru*</label>
             <select 
-              id="transfer_to_room"
-              name="to_room" 
-              value={form.to_room}
-              onChange={handleInputChange}
-              required
-            >
-              <option value="">Pilih Ruangan</option>
-              {ROOM_OPTIONS.map(opt => (
-                <option key={opt.id} value={opt.id}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className={styles.formField}>
-            <label htmlFor="transfer_new_pic">Penanggung Jawab (PIC) Baru*</label>
-            <select 
-              id="transfer_new_pic"
+              id="new_pic"
               name="new_pic" 
               value={form.new_pic}
               onChange={handleInputChange}
               required
             >
-              <option value="">Pilih PIC</option>
+              <option value="">Pilih PIC Baru</option>
               {PIC_OPTIONS.map(opt => (
                 <option key={opt.id} value={opt.id}>{opt.label}</option>
               ))}
@@ -319,7 +312,7 @@ export default function TransfersPage() {
           <div className={styles.formActions}>
             <Button 
               variant="ghost" 
-              onClick={() => setIsOpen(false)}
+              onClick={() => setIsCreateModalOpen(false)}
               disabled={submitting}
             >
               Batal
@@ -329,7 +322,7 @@ export default function TransfersPage() {
               variant="primary"
               loading={submitting}
             >
-              Simpan Pemindahan
+              Proses Mutasi
             </Button>
           </div>
         </form>

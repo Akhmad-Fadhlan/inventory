@@ -413,3 +413,23 @@ label {
     gap: var(--space-md);
   }
 }
+
+/* === PRINT OVERRIDES === */
+@media print {
+  body {
+    background-color: white !important;
+    color: #000000 !important;
+  }
+  #__next {
+    background: #ffffff !important;
+  }
+  aside,
+  header,
+  .toast-container {
+    display: none !important;
+  }
+  .page-content {
+    padding: 0 !important;
+  }
+}
+

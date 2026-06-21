@@ -4,7 +4,7 @@
   gap: var(--space-lg);
 }
 
-.pageHeader {
+.header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -17,253 +17,174 @@
   color: var(--color-foreground-muted);
 }
 
-.actions {
-  display: flex;
-  gap: var(--space-sm);
-}
-
-/* Tabs Bar */
-.tabBar {
-  display: flex;
-  border-bottom: 2px solid var(--color-border);
-  gap: var(--space-sm);
-  padding-bottom: 2px;
-}
-
-.tabButton {
-  padding: 10px 20px;
-  font-family: var(--font-body);
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--color-foreground-muted);
-  border: none;
-  background: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -4px;
-  transition: all var(--transition-fast);
-  cursor: pointer;
-}
-
-.tabButton:hover {
-  color: var(--color-foreground);
-}
-
-.activeTab {
-  color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
-}
-
-/* Filters Row */
-.filterRow {
+/* Tabs Card */
+.tabsCard {
   background-color: var(--color-surface);
   border-radius: var(--rounded-md);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-1);
-  padding: var(--space-md);
+  padding: var(--space-xs);
 }
 
-.filterGroup {
+.tabsWrapper {
   display: flex;
-  align-items: center;
-  gap: var(--space-md);
   flex-wrap: wrap;
+  gap: var(--space-xs);
 }
 
-.filterIcon {
-  color: var(--color-foreground-muted);
-}
-
-.dateInputs {
-  display: flex;
+.tabBtn {
+  display: inline-flex;
   align-items: center;
   gap: var(--space-sm);
-}
-
-.inputWrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.inputIcon {
-  position: absolute;
-  left: 10px;
+  padding: 10px 18px;
+  border-radius: var(--rounded-sm);
   color: var(--color-foreground-muted);
-  pointer-events: none;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+  cursor: pointer;
 }
 
-.dateInput {
-  padding-left: 32px !important;
-  padding-top: 6px !important;
-  padding-bottom: 6px !important;
-  width: 150px !important;
+.tabBtn:hover {
+  background-color: var(--color-surface-hover);
+  color: var(--color-foreground);
 }
 
-.dateSpan {
-  font-size: 0.8125rem;
-  color: var(--color-foreground-muted);
+.activeTab {
+  background-color: var(--color-primary);
+  color: #ffffff !important;
+  font-weight: 600;
+  box-shadow: var(--shadow-1);
 }
 
-.selectInput {
-  padding: 6px 12px;
-  width: auto !important;
-  min-width: 180px;
-  background-color: var(--color-surface);
+.tabIcon {
+  flex-shrink: 0;
 }
 
-.content {
+.tableWrapper {
   width: 100%;
 }
 
-/* Print Only Styles (Hidden on Screen) */
-.printHeader {
-  display: none;
-}
-
+/* Hidden in screen view, shown in print */
+.printHeader,
 .printFooter {
   display: none;
 }
 
-/* Print Layout Specifications */
+/* PRINT MEDIA QUERY STYLES */
 @media print {
-  :global(#__next) {
-    background: white !important;
-  }
-  
   :global(body) {
-    background-color: white !important;
-    color: black !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
   }
-  
-  :global(aside), 
+
+  /* Hide layout wrappers like sidebars and topbars */
+  :global(aside),
   :global(header),
-  .pageHeader,
-  .tabBar,
-  .filterRow,
-  :global(.toast-container) {
+  .header,
+  .tabsCard {
     display: none !important;
   }
-  
-  :global(.mainArea) {
-    margin-left: 0 !important;
+
+  /* Expand content area to full page */
+  :global(.collapsed-layout) :global(main),
+  :global(main) {
+    padding: 0 !important;
+    margin: 0 !important;
     width: 100% !important;
   }
-  
+
   :global(.page-content) {
     padding: 0 !important;
   }
 
   .container {
-    padding: 0 !important;
-    margin: 0 !important;
-    gap: var(--space-md) !important;
+    gap: var(--space-md);
   }
 
   .printHeader {
-    display: block;
+    display: block !important;
+    text-align: center;
+    border-bottom: 2px solid #000000;
+    padding-bottom: var(--space-md);
     margin-bottom: var(--space-lg);
   }
 
   .printHeader h2 {
-    font-size: 1.35rem;
-    font-weight: 700;
-    color: black;
+    font-size: 16pt;
     margin-bottom: 4px;
-    text-align: center;
+    color: #000000;
+  }
+
+  .printHeader h3 {
+    font-size: 13pt;
+    color: #555555;
+    margin-bottom: 8px;
   }
 
   .printHeader p {
-    font-size: 0.8125rem;
-    color: #4a5568;
-    margin: 2px 0;
-    text-align: center;
+    font-size: 9pt;
+    color: #777777;
   }
 
-  .printDivider {
-    border-bottom: 2px solid #1a202c;
-    margin-top: var(--space-md);
+  .tableWrapper {
+    border: none !important;
+    box-shadow: none !important;
   }
 
+  :global(.tableContainer) {
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  :global(table) {
+    font-size: 10pt !important;
+    width: 100% !important;
+  }
+
+  :global(th) {
+    background-color: #f1f5f9 !important;
+    color: #000000 !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 8px !important;
+  }
+
+  :global(td) {
+    border: 1px solid #e2e8f0 !important;
+    padding: 8px !important;
+    color: #000000 !important;
+  }
+
+  /* Sign Block at Bottom */
   .printFooter {
-    display: flex;
+    display: flex !important;
     justify-content: flex-end;
-    margin-top: var(--space-2xl);
+    margin-top: 50px;
     page-break-inside: avoid;
   }
 
-  .signatureBlock {
+  .signBlock {
     text-align: center;
-    width: 240px;
-    font-size: 0.875rem;
+    width: 250px;
   }
 
-  .signatureSpace {
-    height: 80px;
-  }
-
-  /* Table overrides for printing */
-  :global(.tableContainer) {
-    box-shadow: none !important;
-    border: 1px solid #cbd5e1 !important;
-    border-radius: 0 !important;
-  }
-
-  :global(.th) {
-    background-color: #f1f5f9 !important;
-    color: black !important;
-    border-bottom: 1px solid #cbd5e1 !important;
-    font-size: 7.5pt !important;
-    padding: 8px 10px !important;
-  }
-
-  :global(.td) {
-    color: black !important;
-    border-bottom: 1px solid #e2e8f0 !important;
-    font-size: 7.5pt !important;
-    padding: 8px 10px !important;
-    white-space: normal !important; /* Wrap contents in print */
-  }
-
-  :global(.badge) {
-    background-color: transparent !important;
-    border: 1px solid #94a3b8 !important;
-    color: black !important;
-    padding: 1px 4px !important;
-    font-size: 7pt !important;
+  .signLine {
+    height: 60px;
+    border-bottom: 1px dashed #000000;
+    margin-bottom: 8px;
   }
 }
 
-@media (max-width: 640px) {
-  .pageHeader {
+@media (max-width: 768px) {
+  .header {
     flex-direction: column;
     align-items: flex-start;
   }
-  
-  .tabBar {
-    overflow-x: auto;
-    width: 100%;
-  }
-  
-  .tabButton {
-    padding: 8px 12px;
-    white-space: nowrap;
-  }
-  
-  .filterGroup {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .dateInputs {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .dateInput {
-    width: 100% !important;
-  }
-  
-  .selectInput {
-    width: 100% !important;
+
+  .tabBtn {
+    flex-grow: 1;
+    justify-content: center;
   }
 }
