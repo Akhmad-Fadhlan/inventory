@@ -1,0 +1,166 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.subtext {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  color: var(--color-foreground-muted);
+}
+
+/* Filter Card */
+.filterCard {
+  background-color: var(--color-surface);
+  border-radius: var(--rounded-md);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-1);
+  padding: var(--space-md);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.searchWrapper {
+  position: relative;
+  flex-grow: 1;
+  max-width: 480px;
+  min-width: 280px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-foreground-muted);
+  pointer-events: none;
+}
+
+.searchInput {
+  padding-left: 42px !important;
+}
+
+.filtersWrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.slidersIcon {
+  color: var(--color-foreground-muted);
+  margin-right: 4px;
+}
+
+.filterSelect {
+  width: auto !important;
+  min-width: 140px;
+  padding: 8px 12px;
+  border-radius: var(--rounded-sm);
+  background-color: var(--color-surface);
+}
+
+.tableWrapper {
+  width: 100%;
+}
+
+.itemNameCell {
+  display: flex;
+  flex-direction: column;
+}
+
+.itemName {
+  font-weight: 600;
+  color: var(--color-foreground);
+}
+
+.itemBrand {
+  font-size: 0.75rem;
+  color: var(--color-foreground-muted);
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-md);
+}
+
+.pageIndicator {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--color-foreground-muted);
+}
+
+.paginationButtons {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+/* Form Styles inside Modal */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-md);
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .filterCard {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .searchWrapper {
+    max-width: 100%;
+  }
+  
+  .filtersWrapper {
+    width: 100%;
+  }
+  
+  .filterSelect {
+    flex-grow: 1;
+  }
+  
+  .formRow {
+    grid-template-columns: 1fr;
+  }
+}

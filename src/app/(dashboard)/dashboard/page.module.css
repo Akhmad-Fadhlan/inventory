@@ -1,0 +1,88 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.welcomeTitle {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-foreground);
+}
+
+.welcomeSub {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  color: var(--color-foreground-muted);
+}
+
+/* Charts Grid */
+.chartsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+}
+
+@media (max-width: 900px) {
+  .chartsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.noDataChart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--color-foreground-muted);
+  font-size: 0.875rem;
+}
+
+/* Transactions Table section */
+.transactionsSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sectionHeaderTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--color-foreground);
+}
+
+.sectionHeaderIcon {
+  color: var(--color-primary);
+}
+
+.notesText {
+  display: block;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .welcomeTitle {
+    font-size: 1.5rem;
+  }
+  
+  .container {
+    gap: var(--space-lg);
+  }
+}

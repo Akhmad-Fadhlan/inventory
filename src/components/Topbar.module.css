@@ -1,0 +1,131 @@
+.topbar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: var(--sidebar-width);
+  height: var(--topbar-height);
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-lg);
+  z-index: 90;
+  transition: left var(--transition-base), background-color var(--transition-base), border-color var(--transition-base);
+}
+
+.leftSection {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.menuBtn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: var(--color-foreground);
+  transition: background-color var(--transition-fast);
+}
+
+.menuBtn:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.pageTitle {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-foreground);
+  margin: 0;
+}
+
+.rightSection {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  color: var(--color-foreground-muted);
+  transition: all var(--transition-fast);
+}
+
+.actionBtn:hover {
+  background-color: var(--color-surface-hover);
+  color: var(--color-foreground);
+}
+
+.divider {
+  width: 1px;
+  height: 24px;
+  background-color: var(--color-border);
+  margin: 0 var(--space-sm);
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.userName {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-foreground);
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--color-surface-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--color-border);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatarIcon {
+  color: var(--color-foreground-muted);
+}
+
+/* Adjustments when sidebar is collapsed */
+:global(.collapsed-layout) .topbar {
+  left: var(--sidebar-collapsed-width);
+}
+
+/* Responsive view overrides */
+@media (max-width: 1024px) {
+  .topbar {
+    left: 0 !important;
+    padding: 0 var(--space-md);
+  }
+
+  .menuBtn {
+    display: inline-flex;
+  }
+
+  .userName {
+    display: none; /* Hide name on mobile */
+  }
+}

@@ -1,0 +1,91 @@
+.tableContainer {
+  background-color: var(--color-surface);
+  border-radius: var(--rounded-md);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+  width: 100%;
+}
+
+.responsiveWrapper {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+}
+
+.th {
+  background-color: var(--color-background);
+  color: var(--color-foreground-muted);
+  font-weight: 600;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--color-border);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.td {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-foreground);
+  white-space: nowrap;
+}
+
+.row {
+  transition: background-color var(--transition-fast);
+}
+
+.row:last-child .td {
+  border-bottom: none;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
+  background-color: var(--color-surface-hover);
+}
+
+/* Skeleton loader style */
+.skeletonRow .td {
+  padding: 18px 18px;
+}
+
+.skeletonCell {
+  height: 16px;
+  width: 80%;
+  border-radius: var(--rounded-sm);
+}
+
+/* Empty State */
+.emptyCell {
+  padding: var(--space-2xl) var(--space-md);
+  text-align: center;
+}
+
+.emptyContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+.emptyIcon {
+  color: var(--color-foreground-muted);
+  opacity: 0.4;
+}
+
+.emptyText {
+  color: var(--color-foreground-muted);
+  font-size: 0.875rem;
+}

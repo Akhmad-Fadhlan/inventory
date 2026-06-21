@@ -1,0 +1,35 @@
+.layoutContainer {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--color-background);
+}
+
+.mainArea {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin-left: var(--sidebar-width);
+  transition: margin-left var(--transition-base);
+  width: calc(100% - var(--sidebar-width));
+}
+
+.mainAreaCollapsed {
+  margin-left: var(--sidebar-collapsed-width);
+  width: calc(100% - var(--sidebar-collapsed-width));
+}
+
+.content {
+  padding-top: var(--topbar-height);
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 1024px) {
+  .mainArea,
+  .mainAreaCollapsed {
+    margin-left: 0;
+    width: 100%;
+  }
+}
