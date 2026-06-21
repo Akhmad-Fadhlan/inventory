@@ -23,25 +23,25 @@
   border-radius: var(--rounded-md);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-1);
-  padding: var(--space-xs);
+  padding: 4px;
 }
 
 .tabsWrapper {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-xs);
+  gap: 2px;
 }
 
 .tabBtn {
   display: inline-flex;
   align-items: center;
   gap: var(--space-sm);
-  padding: 10px 18px;
+  padding: 10px 16px;
   border-radius: var(--rounded-sm);
-  color: var(--color-foreground-muted);
   font-family: var(--font-body);
   font-size: 0.875rem;
   font-weight: 500;
+  color: var(--color-foreground-muted);
   transition: all var(--transition-fast);
   cursor: pointer;
 }
@@ -52,10 +52,9 @@
 }
 
 .activeTab {
-  background-color: var(--color-primary);
-  color: #ffffff !important;
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
   font-weight: 600;
-  box-shadow: var(--shadow-1);
 }
 
 .tabIcon {
@@ -66,102 +65,53 @@
   width: 100%;
 }
 
-/* Hidden in screen view, shown in print */
-.printHeader,
+/* Print View Elements - Default Hidden on Screen */
+.printHeader {
+  display: none;
+}
+
 .printFooter {
   display: none;
 }
 
-/* PRINT MEDIA QUERY STYLES */
+/* === PRINT STYLE RULES (LOCAL ONLY) === */
 @media print {
-  :global(body) {
-    background-color: #ffffff !important;
-    color: #000000 !important;
-    font-size: 11pt !important;
-  }
-
-  /* Hide layout wrappers like sidebars and topbars */
-  :global(aside),
-  :global(header),
-  .header,
-  .tabsCard {
-    display: none !important;
-  }
-
-  /* Expand content area to full page */
-  :global(.collapsed-layout) :global(main),
-  :global(main) {
-    padding: 0 !important;
-    margin: 0 !important;
-    width: 100% !important;
-  }
-
-  :global(.page-content) {
-    padding: 0 !important;
-  }
-
   .container {
     gap: var(--space-md);
   }
 
+  /* Show print-only header and footer */
   .printHeader {
-    display: block !important;
+    display: block;
     text-align: center;
-    border-bottom: 2px solid #000000;
-    padding-bottom: var(--space-md);
+    border-bottom: 2px double #000000;
+    padding-bottom: var(--space-sm);
     margin-bottom: var(--space-lg);
   }
 
   .printHeader h2 {
-    font-size: 16pt;
+    font-size: 14pt !important;
+    font-weight: 700;
+    color: #000000 !important;
     margin-bottom: 4px;
-    color: #000000;
   }
 
   .printHeader h3 {
-    font-size: 13pt;
-    color: #555555;
-    margin-bottom: 8px;
+    font-size: 12pt !important;
+    font-weight: 600;
+    color: #000000 !important;
+    margin-bottom: 4px;
   }
 
   .printHeader p {
     font-size: 9pt;
-    color: #777777;
+    color: #555555;
   }
 
-  .tableWrapper {
-    border: none !important;
-    box-shadow: none !important;
-  }
-
-  :global(.tableContainer) {
-    border: none !important;
-    box-shadow: none !important;
-  }
-
-  :global(table) {
-    font-size: 10pt !important;
-    width: 100% !important;
-  }
-
-  :global(th) {
-    background-color: #f1f5f9 !important;
-    color: #000000 !important;
-    border: 1px solid #cbd5e1 !important;
-    padding: 8px !important;
-  }
-
-  :global(td) {
-    border: 1px solid #e2e8f0 !important;
-    padding: 8px !important;
-    color: #000000 !important;
-  }
-
-  /* Sign Block at Bottom */
   .printFooter {
-    display: flex !important;
+    display: flex;
     justify-content: flex-end;
-    margin-top: 50px;
+    margin-top: var(--space-3xl);
     page-break-inside: avoid;
   }
 
@@ -172,8 +122,8 @@
 
   .signLine {
     height: 60px;
-    border-bottom: 1px dashed #000000;
-    margin-bottom: 8px;
+    border-bottom: 1px solid #000000;
+    margin-bottom: var(--space-xs);
   }
 }
 
@@ -183,8 +133,12 @@
     align-items: flex-start;
   }
 
+  .tabsWrapper {
+    flex-direction: column;
+    width: 100%;
+  }
+
   .tabBtn {
-    flex-grow: 1;
-    justify-content: center;
+    width: 100%;
   }
 }

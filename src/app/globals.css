@@ -417,19 +417,28 @@ label {
 /* === PRINT OVERRIDES === */
 @media print {
   body {
-    background-color: white !important;
+    background-color: #ffffff !important;
     color: #000000 !important;
+    font-size: 11pt !important;
   }
-  #__next {
-    background: #ffffff !important;
-  }
+  
   aside,
   header,
-  .toast-container {
+  .toast-container,
+  button,
+  .btn {
     display: none !important;
   }
+
+  main {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
   .page-content {
     padding: 0 !important;
   }
 }
+
 
